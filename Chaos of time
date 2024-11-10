@@ -1,0 +1,162 @@
+import pygame
+import math
+
+# Initialize pygame
+pygame.init()
+
+# Create display window
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 675
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Chaos Of Time")
+
+# Game variables
+game_paused = False
+game_started = False
+scrolling = False
+
+# Movement variables
+x = 50
+y = SCREEN_HEIGHT - 70
+width = 64
+height = 64
+vel = 3
+
+platform_y = SCREEN_HEIGHT - 70
+
+isJump = False
+jumpCount = 1
+gravity = 0.1
+fallSpeed = 1
+jumpSpeed = -5
+left = False
+right = False
+walkCount = 0
+
+# Define fonts and colors
+font = pygame.font.SysFont("arialblack", 40)
+TEXT_COL = (255, 255, 255)
+
+# Button class
+class Button:
+    def __init__(self, x, y, image, scale):
+        width = image.get_width()
+        height = image.get_height()
+        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicked = False
+
+    def draw(self):
+        action = False
+        # Get mouse position
+        pos = pygame.mouse.get_pos()
+
+        # Check mouseover
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        # Draw button on screen
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
+
+# Function to draw text
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
+
+
+# Load button images
+start_img = pygame.image.load('images/start.jpg').convert_alpha()
+exit_img = pygame.image.load('images/exit.jpg').convert_alpha()
+title_img = pygame.image.load('images/chaos.jpg').convert_alpha()
+
+# Button instances with adjusted positions
+start_button = Button(200, 400, start_img, 0.5)
+exit_button = Button(650, 400, exit_img, 0.5)
+title_button = Button(650, 400, exit_img, 0.5)
+
+
+# Load background image and set up scrolling
+bg = pygame.image.load("images/infinite background.jpg").convert()
+bg_main = pygame.image.load("images/girly-transformed.png").convert()
+bg_width = bg.get_width()
+scroll = 0
+tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
+
+overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+overlay.fill((0, 0, 0, 200))
+
+# Game loop
+run = True
+while run:
+    screen.blit(bg_main, (0, 0))
+
+    # Draw scrolling background
+    if scrolling:
+        for i in range(0, tiles):
+            screen.blit(bg, (i * bg_width + scroll, 1))
+
+        scroll -= 0.5
+
+        # Reset scroll
+        if abs(scroll) > bg_width:
+            scroll = 0
+
+    if not game_started:
+        # Show the menu screen
+        if start_button.draw():
+            game_started = True
+            game_paused = False
+            scrolling = True
+        if exit_button.draw():
+            run = False
+    else:
+        # Show the game screen if started
+        if game_paused:
+            screen.blit(overlay, (0, 0))
+            draw_text("Press SPACE to resume.", font, TEXT_COL, 345, 300)
+
+        # Movement code for the character
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_a] and x > vel:
+            x -= vel
+        if keys[pygame.K_d] and x < 1200 - width - vel:
+            x += vel
+
+        if not isJump:
+            if keys[pygame.K_s]:
+                isJump = True
+                fallSpeed = jumpSpeed
+        else:
+            y += fallSpeed
+
+            if fallSpeed < 1:
+                fallSpeed += gravity
+
+            if y >= platform_y - height:
+                y = platform_y - height
+                isJump = False
+                fallSpeed = 0
+
+        pygame.draw.rect(screen, (255, 0, 0), (x, y, width, height))
+
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                if game_started:
+                    game_paused = not game_paused
+                    scrolling = not scrolling
+        if event.type == pygame.QUIT:
+            run = False
+
+    pygame.display.update()
+
+pygame.quit()
