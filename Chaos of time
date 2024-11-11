@@ -75,7 +75,7 @@ def draw_text(text, font, text_col, x, y):
 # Load button images
 start_img = pygame.image.load('images/start.jpg').convert_alpha()
 exit_img = pygame.image.load('images/exit.jpg').convert_alpha()
-title_img = pygame.image.load('images/chaos.jpg').convert_alpha()
+title_img = pygame.image.load('images/chaos 2.jpg').convert_alpha()
 
 # Button instances with adjusted positions
 start_button = Button(200, 400, start_img, 0.5)
