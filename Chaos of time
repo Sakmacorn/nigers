@@ -1,6 +1,29 @@
 import pygame
 import math
 
+def adjust_contrast(image, contrast_factor):
+    image_copy = image.copy()
+    width, height = image_copy.get_width(), image_copy.get_height()
+
+    for x in range(width):
+        for y in range(height):
+            r, g, b, a = image_copy.get_at((x, y))
+
+            # Apply the contrast formula: (value - 128) * contrast_factor + 128
+            r = int((r - 128) * contrast_factor + 128)
+            g = int((g - 128) * contrast_factor + 128)
+            b = int((b - 128) * contrast_factor + 128)
+
+            # Ensure RGB values stay within valid range (0-255)
+            r = max(0, min(255, r))
+            g = max(0, min(255, g))
+            b = max(0, min(255, b))
+
+            # Set the adjusted pixel back
+            image_copy.set_at((x, y), (r, g, b, a))
+
+    return image_copy
+
 # Initialize pygame
 pygame.init()
 
@@ -20,7 +43,7 @@ x = 50
 y = SCREEN_HEIGHT - 70
 width = 64
 height = 64
-vel = 3
+vel = 2
 
 platform_y = SCREEN_HEIGHT - 70
 
@@ -28,7 +51,7 @@ isJump = False
 jumpCount = 1
 gravity = 0.1
 fallSpeed = 1
-jumpSpeed = -5
+jumpSpeed = -7
 left = False
 right = False
 walkCount = 0
@@ -73,15 +96,28 @@ def draw_text(text, font, text_col, x, y):
 
 
 # Load button images
-start_img = pygame.image.load('images/start.jpg').convert_alpha()
-exit_img = pygame.image.load('images/exit.jpg').convert_alpha()
-title_img = pygame.image.load('images/chaos 2.jpg').convert_alpha()
+start_img = pygame.image.load('images/start_curve.jpg').convert()
+start_img.set_colorkey((0, 0, 0))
+start_img = pygame.transform.scale(start_img, (int(380), (int(221))))
+
+exit_img = pygame.image.load('images/exit_curve.jpg').convert()
+exit_img.set_colorkey((0, 0, 0))
+exit_img = pygame.transform.scale(exit_img, (int(380), (int(221))))
+
+title_img = pygame.image.load('images/chaos 3.jpg').convert()
+title_img.set_colorkey((0, 0, 0))
+title_img = pygame.transform.scale(title_img, (int(1000), int(350)))
+
+back_img = pygame.image.load('images/back-button-hi.png').convert()
+back_img.set_colorkey((255, 255, 255))
+back_img = pygame.transform.scale(back_img, (int(200), int(200)))
+back_img_contrast = adjust_contrast(back_img, 3)
 
 # Button instances with adjusted positions
-start_button = Button(200, 400, start_img, 0.5)
-exit_button = Button(650, 400, exit_img, 0.5)
-title_button = Button(650, 400, exit_img, 0.5)
-
+start_button = Button(200, 360, start_img, 0.9)
+exit_button = Button(655, 360, exit_img, 0.9)
+title_button = Button(600, 600, exit_img, 0.5)
+back_button = Button(50, 50, back_img_contrast, 0.5)
 
 # Load background image and set up scrolling
 bg = pygame.image.load("images/infinite background.jpg").convert()
@@ -91,10 +127,11 @@ scroll = 0
 tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
 
 overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-overlay.fill((0, 0, 0, 200))
+overlay.fill((0, 0, 0, 100))
 
 # Game loop
 run = True
+show_character = True  # Variable to track whether the character is shown or not
 while run:
     screen.blit(bg_main, (0, 0))
 
@@ -110,7 +147,10 @@ while run:
             scroll = 0
 
     if not game_started:
-        # Show the menu screen
+        # Show the title image at the top
+        screen.blit(title_img, (110, 70))  # Adjust the coordinates as needed
+
+        # Show the menu screen buttons
         if start_button.draw():
             game_started = True
             game_paused = False
@@ -118,40 +158,56 @@ while run:
         if exit_button.draw():
             run = False
     else:
-        # Show the game screen if started
+        # Show the "Back" button and handle game interaction
+        if back_button.draw():
+            game_started = False  # Go back to the main menu
+            game_paused = False    # Unpause the game if it was paused
+            scrolling = False      # Stop scrolling background
+            x = 50  # Reset player position
+            y = SCREEN_HEIGHT - 70  # Reset player y-position
+
+        # Handle the pause state
         if game_paused:
+            # Show the pause overlay and "Press SPACE to resume" message
             screen.blit(overlay, (0, 0))
             draw_text("Press SPACE to resume.", font, TEXT_COL, 345, 300)
-
-        # Movement code for the character
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_a] and x > vel:
-            x -= vel
-        if keys[pygame.K_d] and x < 1200 - width - vel:
-            x += vel
-
-        if not isJump:
-            if keys[pygame.K_s]:
-                isJump = True
-                fallSpeed = jumpSpeed
+            show_character = False  # Hide the character when paused
         else:
-            y += fallSpeed
+            show_character = True  # Show the character when not paused
 
-            if fallSpeed < 1:
-                fallSpeed += gravity
+        # Movement code for the character if game is not paused and character is shown
+        if show_character:
+            keys = pygame.key.get_pressed()
 
-            if y >= platform_y - height:
-                y = platform_y - height
-                isJump = False
-                fallSpeed = 0
+            if keys[pygame.K_a] and x > vel:
+                x -= vel
+            if keys[pygame.K_d] and x < 1200 - width - vel:
+                x += vel
 
-        pygame.draw.rect(screen, (255, 0, 0), (x, y, width, height))
+            if not isJump:
+                if keys[pygame.K_s]:
+                    isJump = True
+                    fallSpeed = jumpSpeed
+            else:
+                y += fallSpeed
 
+                if fallSpeed < 1:
+                    fallSpeed += gravity
+
+                if y >= platform_y - height:
+                    y = platform_y - height
+                    isJump = False
+                    fallSpeed = 0
+
+            # Draw the character when the game is not paused
+            pygame.draw.rect(screen, (255, 0, 0), (x, y, width, height))
+
+    # Handle events
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if game_started:
+                    # Toggle pause state and scrolling
                     game_paused = not game_paused
                     scrolling = not scrolling
         if event.type == pygame.QUIT:
