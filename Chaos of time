@@ -37,6 +37,8 @@ pygame.display.set_caption("Chaos Of Time")
 game_paused = False
 game_started = False
 scrolling = False
+obstacle = [300, 400, 600]
+obstacle_speed = 2
 
 # Movement variables
 x = 50
