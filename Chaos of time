@@ -43,22 +43,51 @@ x = 50
 y = SCREEN_HEIGHT - 70
 width = 64
 height = 64
-vel = 2
+vel = 1
+walkCount = 0
 
 platform_y = SCREEN_HEIGHT - 70
 
 isJump = False
 jumpCount = 1
-gravity = 0.1
-fallSpeed = 1
+gravity = 0.2
+fallSpeed = 2
 jumpSpeed = -7
 left = False
 right = False
-walkCount = 0
 
 # Define fonts and colors
 font = pygame.font.SysFont("arialblack", 40)
 TEXT_COL = (255, 255, 255)
+
+# Load character images
+walkRight = [pygame.image.load('characters/R1.png'), pygame.image.load('characters/R2.png'), pygame.image.load('characters/R3.png'),
+             pygame.image.load('characters/R4.png'), pygame.image.load('characters/R5.png'), pygame.image.load('characters/R6.png'),
+             pygame.image.load('characters/R7.png'), pygame.image.load('characters/R8.png'), pygame.image.load('characters/R9.png')]
+
+walkLeft = [pygame.image.load('characters/L1.png'), pygame.image.load('characters/L2.png'), pygame.image.load('characters/L3.png'),
+            pygame.image.load('characters/L4.png'), pygame.image.load('characters/L5.png'), pygame.image.load('characters/L6.png'),
+            pygame.image.load('characters/L7.png'), pygame.image.load('characters/L8.png'), pygame.image.load('characters/L9.png')]
+
+char = pygame.image.load('characters/standing.png')
+
+# Load button images
+start_img = pygame.image.load('images/start_curve.jpg').convert()
+start_img.set_colorkey((0, 0, 0))
+start_img = pygame.transform.scale(start_img, (int(380), (int(221))))
+
+exit_img = pygame.image.load('images/exit_curve.jpg').convert()
+exit_img.set_colorkey((0, 0, 0))
+exit_img = pygame.transform.scale(exit_img, (int(380), (int(221))))
+
+title_img = pygame.image.load('images/chaos 3.jpg').convert()
+title_img.set_colorkey((0, 0, 0))
+title_img = pygame.transform.scale(title_img, (int(1000), int(350)))
+
+back_img = pygame.image.load('images/back-button-hi.png').convert()
+back_img.set_colorkey((255, 255, 255))
+back_img = pygame.transform.scale(back_img, (int(200), int(200)))
+back_img_contrast = adjust_contrast(back_img, 3)
 
 # Button class
 class Button:
@@ -89,36 +118,6 @@ class Button:
 
         return action
 
-# Function to draw text
-def draw_text(text, font, text_col, x, y):
-    img = font.render(text, True, text_col)
-    screen.blit(img, (x, y))
-
-
-# Load button images
-start_img = pygame.image.load('images/start_curve.jpg').convert()
-start_img.set_colorkey((0, 0, 0))
-start_img = pygame.transform.scale(start_img, (int(380), (int(221))))
-
-exit_img = pygame.image.load('images/exit_curve.jpg').convert()
-exit_img.set_colorkey((0, 0, 0))
-exit_img = pygame.transform.scale(exit_img, (int(380), (int(221))))
-
-title_img = pygame.image.load('images/chaos 3.jpg').convert()
-title_img.set_colorkey((0, 0, 0))
-title_img = pygame.transform.scale(title_img, (int(1000), int(350)))
-
-back_img = pygame.image.load('images/back-button-hi.png').convert()
-back_img.set_colorkey((255, 255, 255))
-back_img = pygame.transform.scale(back_img, (int(200), int(200)))
-back_img_contrast = adjust_contrast(back_img, 3)
-
-# Button instances with adjusted positions
-start_button = Button(200, 360, start_img, 0.9)
-exit_button = Button(655, 360, exit_img, 0.9)
-title_button = Button(600, 600, exit_img, 0.5)
-back_button = Button(50, 50, back_img_contrast, 0.5)
-
 # Load background image and set up scrolling
 bg = pygame.image.load("images/infinite background.jpg").convert()
 bg_main = pygame.image.load("images/girly-transformed.png").convert()
@@ -128,6 +127,35 @@ tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
 
 overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 overlay.fill((0, 0, 0, 100))
+
+# Function to draw text
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
+
+# Function to draw character and background
+def redrawGameWindow():
+    global walkCount
+
+    # Draw background and character
+    if walkCount + 1 >= 27:
+        walkCount = 0
+
+    if left:
+        screen.blit(walkLeft[walkCount // 3], (x, y))
+        walkCount += 1
+    elif right:
+        screen.blit(walkRight[walkCount // 3], (x, y))
+        walkCount += 1
+    else:
+        screen.blit(char, (x, y))
+
+    pygame.display.update()
+
+# Button instances with adjusted positions
+start_button = Button(200, 360, start_img, 0.9)
+exit_button = Button(655, 360, exit_img, 0.9)
+back_button = Button(50, 50, back_img_contrast, 0.5)
 
 # Game loop
 run = True
@@ -181,8 +209,16 @@ while run:
 
             if keys[pygame.K_a] and x > vel:
                 x -= vel
-            if keys[pygame.K_d] and x < 1200 - width - vel:
+                left = True
+                right = False
+            elif keys[pygame.K_d] and x < 1200 - width - vel:
                 x += vel
+                left = False
+                right = True
+            else:
+                left = False
+                right = False
+                walkCount = 0
 
             if not isJump:
                 if keys[pygame.K_s]:
@@ -199,8 +235,8 @@ while run:
                     isJump = False
                     fallSpeed = 0
 
-            # Draw the character when the game is not paused
-            pygame.draw.rect(screen, (255, 0, 0), (x, y, width, height))
+            # Draw character with animation
+            redrawGameWindow()
 
     # Handle events
     for event in pygame.event.get():
