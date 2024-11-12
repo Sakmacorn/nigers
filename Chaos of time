@@ -216,25 +216,26 @@ while run:
         else:
             show_character = True  # Show the character when not paused
 
-        # Obstacle creation and movement
-        if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
-            obstacle = pygame.Rect(SCREEN_WIDTH, random.randint( SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
-            obstacles.append(obstacle)
-            obstacle_timer = pygame.time.get_ticks()
+        # Obstacle creation and movement (only when the game is not paused)
+        if not game_paused:
+            if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
+                obstacle = pygame.Rect(SCREEN_WIDTH, random.randint(SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+                obstacles.append(obstacle)
+                obstacle_timer = pygame.time.get_ticks()
 
-        # Move and draw obstacles
-        for obstacle in obstacles:
-            obstacle.x -= OBSTACLES_SPEED
-            screen.blit(obstacle_img, (obstacle.x, obstacle.y))
+            # Move and draw obstacles when the game is not paused
+            for obstacle in obstacles:
+                obstacle.x -= OBSTACLES_SPEED
+                screen.blit(obstacle_img, (obstacle.x, obstacle.y))
+
+            # Remove obstacles that go off screen
+            obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
 
         # Collision detection
         player_rect = pygame.Rect(x, y, width, height)  # Player's hitbox
         for obstacle in obstacles:
             if player_rect.colliderect(obstacle):
                 run = False  # End the game on collision
-
-        # Remove obstacles that go off screen
-        obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
 
         # Movement code for the character if game is not paused and character is shown
         if show_character:
