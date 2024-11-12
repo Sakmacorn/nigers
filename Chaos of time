@@ -53,7 +53,7 @@ platform_y = SCREEN_HEIGHT - 70
 # character jump
 isJump = False
 jumpCount = 1
-gravity = 0.2
+gravity = 0.1
 fallSpeed = 2
 jumpSpeed = -7
 left = False
@@ -93,14 +93,14 @@ back_img = pygame.transform.scale(back_img, (int(200), int(200)))
 back_img_contrast = adjust_contrast(back_img, 3)
 
 # Load obstacle image
-obstacle_img = pygame.image.load('images/pacman_PNG80.png').convert_alpha()
+obstacle_img = pygame.image.load('images/bullet black.png').convert_alpha()
 obstacle_img = pygame.transform.scale(obstacle_img, (50, 50))  # Adjust size as needed
 
 # Obstacles variables
 obstacles = []
 obstacle_timer = pygame.time.get_ticks()
-OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 50, 50
-OBSTACLES_SPEED = 1
+OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 30, 30
+OBSTACLES_SPEED = 2
 
 # Button class
 class Button:
@@ -217,8 +217,8 @@ while run:
             show_character = True  # Show the character when not paused
 
         # Obstacle creation and movement
-        if pygame.time.get_ticks() - obstacle_timer > 2000:  # Every 1.5 seconds
-            obstacle = pygame.Rect(SCREEN_WIDTH, random.randint( SCREEN_HEIGHT - 100, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+        if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
+            obstacle = pygame.Rect(SCREEN_WIDTH, random.randint( SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
             obstacles.append(obstacle)
             obstacle_timer = pygame.time.get_ticks()
 
