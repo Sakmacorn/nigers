@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 
 def adjust_contrast(image, contrast_factor):
     image_copy = image.copy()
@@ -37,8 +38,7 @@ pygame.display.set_caption("Chaos Of Time")
 game_paused = False
 game_started = False
 scrolling = False
-obstacle = [300, 400, 600]
-obstacle_speed = 2
+game_over = False
 
 # Movement variables
 x = 50
@@ -50,6 +50,7 @@ walkCount = 0
 
 platform_y = SCREEN_HEIGHT - 70
 
+# character jump
 isJump = False
 jumpCount = 1
 gravity = 0.2
@@ -90,6 +91,16 @@ back_img = pygame.image.load('images/back-button-hi.png').convert()
 back_img.set_colorkey((255, 255, 255))
 back_img = pygame.transform.scale(back_img, (int(200), int(200)))
 back_img_contrast = adjust_contrast(back_img, 3)
+
+# Load obstacle image
+obstacle_img = pygame.image.load('images/pacman_PNG80.png').convert_alpha()
+obstacle_img = pygame.transform.scale(obstacle_img, (50, 50))  # Adjust size as needed
+
+# Obstacles variables
+obstacles = []
+obstacle_timer = pygame.time.get_ticks()
+OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 50, 50
+OBSTACLES_SPEED = 1
 
 # Button class
 class Button:
@@ -170,7 +181,7 @@ while run:
         for i in range(0, tiles):
             screen.blit(bg, (i * bg_width + scroll, 1))
 
-        scroll -= 0.5
+        scroll -= 0.2
 
         # Reset scroll
         if abs(scroll) > bg_width:
@@ -205,6 +216,26 @@ while run:
         else:
             show_character = True  # Show the character when not paused
 
+        # Obstacle creation and movement
+        if pygame.time.get_ticks() - obstacle_timer > 2000:  # Every 1.5 seconds
+            obstacle = pygame.Rect(SCREEN_WIDTH, random.randint( SCREEN_HEIGHT - 100, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+            obstacles.append(obstacle)
+            obstacle_timer = pygame.time.get_ticks()
+
+        # Move and draw obstacles
+        for obstacle in obstacles:
+            obstacle.x -= OBSTACLES_SPEED
+            screen.blit(obstacle_img, (obstacle.x, obstacle.y))
+
+        # Collision detection
+        player_rect = pygame.Rect(x, y, width, height)  # Player's hitbox
+        for obstacle in obstacles:
+            if player_rect.colliderect(obstacle):
+                run = False  # End the game on collision
+
+        # Remove obstacles that go off screen
+        obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
+
         # Movement code for the character if game is not paused and character is shown
         if show_character:
             keys = pygame.key.get_pressed()
@@ -228,16 +259,13 @@ while run:
                     fallSpeed = jumpSpeed
             else:
                 y += fallSpeed
-
                 if fallSpeed < 1:
                     fallSpeed += gravity
-
                 if y >= platform_y - height:
                     y = platform_y - height
                     isJump = False
                     fallSpeed = 0
 
-            # Draw character with animation
             redrawGameWindow()
 
     # Handle events
@@ -245,7 +273,6 @@ while run:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if game_started:
-                    # Toggle pause state and scrolling
                     game_paused = not game_paused
                     scrolling = not scrolling
         if event.type == pygame.QUIT:
