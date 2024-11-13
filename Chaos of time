@@ -2,29 +2,6 @@ import pygame
 import math
 import random
 
-def adjust_contrast(image, contrast_factor):
-    image_copy = image.copy()
-    width, height = image_copy.get_width(), image_copy.get_height()
-
-    for x in range(width):
-        for y in range(height):
-            r, g, b, a = image_copy.get_at((x, y))
-
-            # Apply the contrast formula: (value - 128) * contrast_factor + 128
-            r = int((r - 128) * contrast_factor + 128)
-            g = int((g - 128) * contrast_factor + 128)
-            b = int((b - 128) * contrast_factor + 128)
-
-            # Ensure RGB values stay within valid range (0-255)
-            r = max(0, min(255, r))
-            g = max(0, min(255, g))
-            b = max(0, min(255, b))
-
-            # Set the adjusted pixel back
-            image_copy.set_at((x, y), (r, g, b, a))
-
-    return image_copy
-
 # Initialize pygame
 pygame.init()
 
@@ -54,7 +31,7 @@ platform_y = SCREEN_HEIGHT - 70
 isJump = False
 jumpCount = 1
 gravity = 0.1
-fallSpeed = 2
+fallSpeed = 1
 jumpSpeed = -7
 left = False
 right = False
@@ -90,7 +67,7 @@ title_img = pygame.transform.scale(title_img, (int(1000), int(350)))
 back_img = pygame.image.load('images/back-button-hi.png').convert()
 back_img.set_colorkey((255, 255, 255))
 back_img = pygame.transform.scale(back_img, (int(200), int(200)))
-back_img_contrast = adjust_contrast(back_img, 3)
+
 
 # Load obstacle image
 obstacle_img = pygame.image.load('images/bullet black.png').convert_alpha()
@@ -168,7 +145,7 @@ def redrawGameWindow():
 # Button instances with adjusted positions
 start_button = Button(200, 360, start_img, 0.9)
 exit_button = Button(655, 360, exit_img, 0.9)
-back_button = Button(50, 50, back_img_contrast, 0.5)
+back_button = Button(50, 50, back_img, 0.5)
 
 # Game loop
 run = True
