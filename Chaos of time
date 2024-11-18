@@ -30,9 +30,9 @@ platform_y = SCREEN_HEIGHT - 70
 # character jump
 isJump = False
 jumpCount = 1
-gravity = 0.1
+gravity = 0.2
 fallSpeed = 1
-jumpSpeed = -7
+jumpSpeed = -8
 left = False
 right = False
 
@@ -77,7 +77,7 @@ obstacle_img = pygame.transform.scale(obstacle_img, (50, 50))  # Adjust size as 
 obstacles = []
 obstacle_timer = pygame.time.get_ticks()
 OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 30, 30
-OBSTACLES_SPEED = 2
+OBSTACLES_SPEED = 3
 
 # Button class
 class Button:
@@ -142,6 +142,13 @@ def redrawGameWindow():
 
     pygame.display.update()
 
+# Function for game over screen
+def display_game_over():
+    screen.fill((0, 0, 0))  # Clear screen
+    draw_text('TALO KA NANAMAN? AYUSIN MO!', font, TEXT_COL, 220, 200)
+    draw_text('PRESS SPACE TO PLAY AGAIN!', font, TEXT_COL, 250, 300)
+    pygame.display.update()
+
 # Button instances with adjusted positions
 start_button = Button(200, 360, start_img, 0.9)
 exit_button = Button(655, 360, exit_img, 0.9)
@@ -176,81 +183,94 @@ while run:
         if exit_button.draw():
             run = False
     else:
-        # Show the "Back" button and handle game interaction
-        if back_button.draw():
-            game_started = False  # Go back to the main menu
-            game_paused = False    # Unpause the game if it was paused
-            scrolling = False      # Stop scrolling background
-            x = 50  # Reset player position
-            y = SCREEN_HEIGHT - 70  # Reset player y-position
-
-        # Handle the pause state
-        if game_paused:
-            # Show the pause overlay and "Press SPACE to resume" message
-            screen.blit(overlay, (0, 0))
-            draw_text("Press SPACE to resume.", font, TEXT_COL, 345, 300)
-            show_character = False  # Hide the character when paused
-        else:
-            show_character = True  # Show the character when not paused
-
-        # Obstacle creation and movement (only when the game is not paused)
-        if not game_paused:
-            if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
-                obstacle = pygame.Rect(SCREEN_WIDTH, random.randint(SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
-                obstacles.append(obstacle)
-                obstacle_timer = pygame.time.get_ticks()
-
-            # Move and draw obstacles when the game is not paused
-            for obstacle in obstacles:
-                obstacle.x -= OBSTACLES_SPEED
-                screen.blit(obstacle_img, (obstacle.x, obstacle.y))
-
-            # Remove obstacles that go off screen
-            obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
-
-        # Collision detection
-        player_rect = pygame.Rect(x, y, width, height)  # Player's hitbox
-        for obstacle in obstacles:
-            if player_rect.colliderect(obstacle):
-                run = False  # End the game on collision
-
-        # Movement code for the character if game is not paused and character is shown
-        if show_character:
+        if game_over:
+            display_game_over()
             keys = pygame.key.get_pressed()
+            if keys[pygame.K_SPACE]:
+                # Reset game state
+                game_over = False
+                x = 50
+                y = SCREEN_HEIGHT - 70
+                obstacles = []
+                scrolling = True
+                game_started = True
 
-            if keys[pygame.K_a] and x > vel:
-                x -= vel
-                left = True
-                right = False
-            elif keys[pygame.K_d] and x < 1200 - width - vel:
-                x += vel
-                left = False
-                right = True
+        else:
+            # Show the "Back" button and handle game interaction
+            if back_button.draw():
+                game_started = False  # Go back to the main menu
+                game_paused = False    # Unpause the game if it was paused
+                scrolling = False      # Stop scrolling background
+                x = 50  # Reset player position
+                y = SCREEN_HEIGHT - 70  # Reset player y-position
+
+            # Handle the pause state
+            if game_paused:
+                # Show the pause overlay and "Press SPACE to resume" message
+                screen.blit(overlay, (0, 0))
+                draw_text("Press SPACE to resume.", font, TEXT_COL, 345, 300)
+                show_character = False  # Hide the character when paused
             else:
-                left = False
-                right = False
-                walkCount = 0
+                show_character = True  # Show the character when not paused
 
-            if not isJump:
-                if keys[pygame.K_s]:
-                    isJump = True
-                    fallSpeed = jumpSpeed
-            else:
-                y += fallSpeed
-                if fallSpeed < 1:
-                    fallSpeed += gravity
-                if y >= platform_y - height:
-                    y = platform_y - height
-                    isJump = False
-                    fallSpeed = 0
+            # Obstacle creation and movement (only when the game is not paused)
+            if not game_paused:
+                if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
+                    obstacle = pygame.Rect(SCREEN_WIDTH, random.randint(SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+                    obstacles.append(obstacle)
+                    obstacle_timer = pygame.time.get_ticks()
 
-            redrawGameWindow()
+                # Move and draw obstacles when the game is not paused
+                for obstacle in obstacles:
+                    obstacle.x -= OBSTACLES_SPEED
+                    screen.blit(obstacle_img, (obstacle.x, obstacle.y))
+
+                # Remove obstacles that go off screen
+                obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
+
+            # Collision detection
+            player_rect = pygame.Rect(x, y, width, height)  # Player's hitbox
+            for obstacle in obstacles:
+                if player_rect.colliderect(obstacle):
+                    game_over = True  # Trigger game over
+
+            # Movement code for the character if game is not paused and character is shown
+            if show_character:
+                keys = pygame.key.get_pressed()
+
+                if keys[pygame.K_a] and x > vel:
+                    x -= vel
+                    left = True
+                    right = False
+                elif keys[pygame.K_d] and x < 1200 - width - vel:
+                    x += vel
+                    left = False
+                    right = True
+                else:
+                    left = False
+                    right = False
+                    walkCount = 0
+
+                if not isJump:
+                    if keys[pygame.K_s]:
+                        isJump = True
+                        fallSpeed = jumpSpeed
+                else:
+                    y += fallSpeed
+                    if fallSpeed < 1:
+                        fallSpeed += gravity
+                    if y >= platform_y - height:
+                        y = platform_y - height
+                        isJump = False
+                        fallSpeed = 0
+
+                redrawGameWindow()
 
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                if game_started:
+                if game_started and not game_over:
                     game_paused = not game_paused
                     scrolling = not scrolling
         if event.type == pygame.QUIT:
