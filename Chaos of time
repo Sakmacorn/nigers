@@ -2,7 +2,6 @@ import pygame
 import math
 import random
 
-# Initialize pygame
 pygame.init()
 
 # Create display window
@@ -38,6 +37,7 @@ right = False
 
 # Define fonts and colors
 font = pygame.font.SysFont("arialblack", 40)
+smallfont = pygame.font.SysFont("arial", 30)
 TEXT_COL = (255, 255, 255)
 
 # Load character images
@@ -79,6 +79,14 @@ obstacle_timer = pygame.time.get_ticks()
 OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 30, 30
 OBSTACLES_SPEED = 3
 
+# Score variable
+score_value = 0
+
+# Function to draw the score
+def draw_score(score_value):
+    text = smallfont.render("Score: " + str(score_value), True, (0, 0, 0))
+    screen.blit(text, (SCREEN_WIDTH - 150, 10))  # Top right corner
+
 # Button class
 class Button:
     def __init__(self, x, y, image, scale):
@@ -91,10 +99,7 @@ class Button:
 
     def draw(self):
         action = False
-        # Get mouse position
         pos = pygame.mouse.get_pos()
-
-        # Check mouseover
         if self.rect.collidepoint(pos):
             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
                 self.clicked = True
@@ -103,10 +108,15 @@ class Button:
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicked = False
 
-        # Draw button on screen
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
         return action
+
+# Custom Obstacle class to add 'passed' attribute
+class Obstacle:
+    def __init__(self, rect):
+        self.rect = rect
+        self.passed = False  # This will track if the obstacle has been passed by the player
 
 # Load background image and set up scrolling
 bg = pygame.image.load("images/infinite background.jpg").convert()
@@ -146,7 +156,7 @@ def redrawGameWindow():
 def display_game_over():
     screen.fill((0, 0, 0))  # Clear screen
     draw_text('TALO KA NANAMAN? AYUSIN MO!', font, TEXT_COL, 220, 200)
-    draw_text('PRESS SPACE TO PLAY AGAIN!', font, TEXT_COL, 250, 300)
+    draw_text('PRESS R TO PLAY AGAIN!', font, TEXT_COL, 310, 300)
     pygame.display.update()
 
 # Button instances with adjusted positions
@@ -158,20 +168,10 @@ back_button = Button(50, 50, back_img, 0.5)
 run = True
 show_character = True  # Variable to track whether the character is shown or not
 while run:
-    screen.blit(bg_main, (0, 0))
-
-    # Draw scrolling background
-    if scrolling:
-        for i in range(0, tiles):
-            screen.blit(bg, (i * bg_width + scroll, 1))
-
-        scroll -= 0.2
-
-        # Reset scroll
-        if abs(scroll) > bg_width:
-            scroll = 0
-
     if not game_started:
+        # Main Menu - Use the bg_main background
+        screen.blit(bg_main, (0, 0))  # Draw the main menu background
+
         # Show the title image at the top
         screen.blit(title_img, (110, 70))  # Adjust the coordinates as needed
 
@@ -179,30 +179,33 @@ while run:
         if start_button.draw():
             game_started = True
             game_paused = False
-            scrolling = True
+            score_value = 0  # Reset score when starting the game
         if exit_button.draw():
             run = False
     else:
+        # After the game starts - Use the static bg background
+        screen.blit(bg, (0, 0))  # Draw the game background
+
         if game_over:
             display_game_over()
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
+            if keys[pygame.K_r]:
                 # Reset game state
                 game_over = False
                 x = 50
                 y = SCREEN_HEIGHT - 70
                 obstacles = []
-                scrolling = True
-                game_started = True
+                score_value = 0  # Reset score when restarting
+                game_started = True  # Restart the game
 
         else:
             # Show the "Back" button and handle game interaction
             if back_button.draw():
                 game_started = False  # Go back to the main menu
                 game_paused = False    # Unpause the game if it was paused
-                scrolling = False      # Stop scrolling background
                 x = 50  # Reset player position
                 y = SCREEN_HEIGHT - 70  # Reset player y-position
+                score_value = 0  # Reset score when going back to the main menu
 
             # Handle the pause state
             if game_paused:
@@ -216,23 +219,23 @@ while run:
             # Obstacle creation and movement (only when the game is not paused)
             if not game_paused:
                 if pygame.time.get_ticks() - obstacle_timer > 1500:  # Every 1.5 seconds
-                    obstacle = pygame.Rect(SCREEN_WIDTH, random.randint(SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+                    obstacle = Obstacle(pygame.Rect(SCREEN_WIDTH, random.randint(SCREEN_HEIGHT - 200, SCREEN_HEIGHT - OBSTACLE_HEIGHT), OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
                     obstacles.append(obstacle)
                     obstacle_timer = pygame.time.get_ticks()
 
                 # Move and draw obstacles when the game is not paused
                 for obstacle in obstacles:
-                    obstacle.x -= OBSTACLES_SPEED
-                    screen.blit(obstacle_img, (obstacle.x, obstacle.y))
+                    obstacle.rect.x -= OBSTACLES_SPEED
+                    screen.blit(obstacle_img, (obstacle.rect.x, obstacle.rect.y))
 
                 # Remove obstacles that go off screen
-                obstacles = [ob for ob in obstacles if ob.x > -OBSTACLE_WIDTH]
+                obstacles = [ob for ob in obstacles if ob.rect.x > -OBSTACLE_WIDTH]
 
             # Collision detection
-            player_rect = pygame.Rect(x, y, width, height)  # Player's hitbox
+            player_rect = pygame.Rect(x, y, width, height)
             for obstacle in obstacles:
-                if player_rect.colliderect(obstacle):
-                    game_over = True  # Trigger game over
+                if player_rect.colliderect(obstacle.rect):
+                    game_over = True
 
             # Movement code for the character if game is not paused and character is shown
             if show_character:
@@ -266,13 +269,21 @@ while run:
 
                 redrawGameWindow()
 
+            # Draw score on the screen
+            draw_score(score_value)
+
+            # Score handling - Update score when obstacles are passed
+            for obstacle in obstacles:
+                if obstacle.rect.x + OBSTACLE_WIDTH < x and not obstacle.passed:
+                    score_value += 1  # Increment score when an obstacle is passed
+                    obstacle.passed = True
+
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if game_started and not game_over:
                     game_paused = not game_paused
-                    scrolling = not scrolling
         if event.type == pygame.QUIT:
             run = False
 
